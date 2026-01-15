@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Social Jetlag Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8; /* Light Blue */
+            --accent: #a855f7; /* Purple */
+            --success: #22c55e; /* Green */
+            --warning: #eab308; /* Yellow */
+            --danger: #ef4444; /* Red */
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* --- Header & Tabs --- */
+        header {
+            background: linear-gradient(135deg, #1e1b4b, #312e81);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        p.subtitle { margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem; font-weight: bold; }
+
+        .tabs {
+            display: flex;
+            background-color: #0f172a;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover { background-color: rgba(255,255,255,0.05); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        /* --- Content Sections --- */
+        .content { padding: 25px; min-height: 500px; }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Controls & Sliders --- */
+        .control-group {
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--primary); }
+        
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .slider-row span { min-width: 80px; font-variant-numeric: tabular-nums; }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #475569;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        input[type="checkbox"] {
+            width: 20px; height: 20px; accent-color: var(--success); cursor: pointer;
+        }
+
+        /* --- TAB 1: Visuals --- */
+        .week-viz {
+            display: flex; flex-direction: column; gap: 5px;
+            margin: 20px 0; background: #0f172a; padding: 15px; border-radius: 10px;
+        }
+
+        .day-row {
+            display: flex; height: 30px; position: relative;
+            background: #334155; border-radius: 4px; overflow: hidden;
+        }
+
+        .day-label {
+            position: absolute; left: 5px; top: 5px; z-index: 2;
+            font-size: 0.8rem; color: rgba(255,255,255,0.7); width: 40px;
+        }
+
+        .sleep-bar {
+            background-color: var(--accent); height: 100%; position: absolute; transition: all 0.5s ease;
+        }
+
+        .mid-sleep-marker {
+            position: absolute; top: 0; bottom: 0; width: 4px;
+            background-color: var(--warning); transform: translateX(-50%); z-index: 5;
+            box-shadow: 0 0 8px var(--warning); transition: all 0.5s ease;
+        }
+
+        .legend-box {
+            background: rgba(234, 179, 8, 0.1); border: 1px solid var(--warning);
+            padding: 10px; margin-top: 10px; border-radius: 8px; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        /* Meter */
+        .meter-container {
+            text-align: center; margin-top: 30px; padding: 20px;
+            background: rgba(0,0,0,0.2); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .meter-gauge {
+            height: 20px; background: linear-gradient(to right, var(--success) 33%, var(--warning) 33% 66%, var(--danger) 66%);
+            border-radius: 10px; position: relative; margin: 15px 0;
+        }
+
+        .meter-needle {
+            position: absolute; top: -5px; height: 30px; width: 4px;
+            background: white; border: 2px solid #000; transition: left 0.5s ease;
+        }
+
+        .risk-badge {
+            display: inline-block; padding: 5px 15px; border-radius: 20px;
+            font-weight: bold; margin-top: 10px; text-transform: uppercase; font-size: 0.9rem;
+        }
+
+        /* --- TAB 2: Clock & Explanations --- */
+        .clock-container {
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; gap: 20px; margin-top: 20px;
+        }
+        
+        canvas {
+            background: radial-gradient(circle, #1e293b 60%, #0f172a 70%);
+            border-radius: 50%; box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+        }
+
+        .bio-takeaway-box {
+            background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px;
+            margin-top: 20px; border-left: 5px solid var(--danger);
+        }
+        
+        .con-text {
+            color: #ef4444; font-size: 0.85rem; margin-top: 5px; font-style: italic;
+        }
+
+        /* --- TAB 3: FIX --- */
+        .fix-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+        @media (max-width: 768px) { .fix-layout { grid-template-columns: 1fr; } }
+
+        .intervention-item {
+            background: #334155; padding: 15px; border-radius: 8px;
+            margin-bottom: 10px; border: 1px solid transparent;
+        }
+        .intervention-item.active { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        
+        .int-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .int-title { font-weight: bold; display: flex; gap: 8px; align-items: center; }
+        .int-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; }
+        
+        .mini-timeline-container {
+            background: #0f172a; padding: 10px; border-radius: 10px; padding-bottom: 25px; /* space for ticks */
+            position: relative;
+        }
+        .mini-title { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .time-ticks {
+            position: absolute; bottom: 5px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between;
+            font-size: 0.65rem; color: var(--text-muted); pointer-events: none;
+        }
+
+        .live-results {
+            background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-top: 20px;
+        }
+        .comparison-row { margin-bottom: 15px; }
+        .bar-bg {
+            height: 12px; width: 100%; background: linear-gradient(to right, var(--success), var(--warning), var(--danger));
+            border-radius: 6px; position: relative; margin-top: 5px;
+        }
+        .bar-marker {
+            position: absolute; top: -4px; width: 4px; height: 20px;
+            background: #fff; border: 1px solid #000; transition: left 0.5s;
+        }
+
+        /* --- POPUP --- */
+        .summary-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .summary-overlay.show { display: flex !important; }
+
+        .summary-card {
+            background: var(--card-bg); padding: 30px; border-radius: 20px;
+            max-width: 500px; text-align: center; border: 1px solid var(--primary);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        .btn-main {
+            background: var(--primary); color: #000; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+        .btn-main:hover { opacity: 0.9; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>The Social Jetlag Simulator</h1>
+        <p class="subtitle">HOSA Health Education - Social Jetlag</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(1)">1. Build Your Week</button>
+        <button class="tab-btn" onclick="switchTab(2)">2. Biological Clock</button>
+        <button class="tab-btn" onclick="switchTab(3)">3. Fix Your Week</button>
+    </div>
+
+    <!-- TAB 1: SIMULATOR -->
+    <div id="tab1" class="tab-content active">
+        <div class="content">
+            <div class="control-group">
+                <label>📅 School/Work Days (Mon-Fri)</label>
+                <div class="slider-row">
+                    <span>Bedtime:</span>
+                    <input type="range" id="schoolBed" min="18" max="28" step="0.25" value="23" oninput="updateSim()">
+                    <span id="schoolBedVal" style="color:var(--primary)">11:00 PM</span>
+                </div>
+                <div class="slider-row">
+                    <span>Wake Up:</span>
+                    <input type="range" id="schoolWake" min="4" max="12" step="0.25" value="6.5" oninput="updateSim()">
+                    <span id="schoolWakeVal" style="color:var(--primary)">6:30 AM</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>🎉 Free Days (Sat-Sun)</label>
+                <div class="slider-row">
+                    <span>Bedtime:</span>
+                    <input type="range" id="freeBed" min="18" max="30" step="0.25" value="26" oninput="updateSim()">
+                    <span id="freeBedVal" style="color:var(--accent)">2:00 AM</span>
+                </div>
+                <div class="slider-row">
+                    <span>Wake Up:</span>
+                    <input type="range" id="freeWake" min="4" max="16" step="0.25" value="11" oninput="updateSim()">
+                    <span id="freeWakeVal" style="color:var(--accent)">11:00 AM</span>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="week-viz" id="timelineContainer"></div>
+            
+            <div class="legend-box">
+                <div style="width:4px; height:20px; background:var(--warning);"></div>
+                <div>
+                    <strong>What is the Yellow Line?</strong><br>
+                    This is your "Mid-Sleep" point. When this line jumps back and forth between weekdays and weekends, your body is confused—just like flying across time zones.
+                </div>
+            </div>
+
+            <div class="meter-container">
+                <h3>Your Social Jetlag Score</h3>
+                <h1 id="sjlDisplay" style="font-size: 3rem; margin: 10px 0;">0 hr</h1>
+                <div class="meter-gauge">
+                    <div class="meter-needle" id="meterNeedle"></div>
+                </div>
+                <div id="riskBadge" class="risk-badge" style="background:var(--success)">Low Risk</div>
+                <div id="riskText" style="margin-top:15px; line-height: 1.5; color:var(--text-muted)">Your schedule is consistent.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: BIOLOGY -->
+    <div id="tab2" class="tab-content">
+        <div class="content">
+            <div class="control-group">
+                <label>🧬 Your Chronotype (Internal Rhythm)</label>
+                <div class="slider-row">
+                    <span>Early Bird</span>
+                    <input type="range" id="chronotype" min="-2" max="2" step="0.5" value="0" oninput="updateClock()">
+                    <span>Night Owl</span>
+                </div>
+                <p id="chronoText" style="font-size:0.9rem; color:var(--text-muted); margin-top:10px;">
+                    <!-- Text inserted by JS -->
+                </p>
+            </div>
+
+            <div class="clock-container">
+                <canvas id="bioClock" width="300" height="300"></canvas>
+                
+                <div style="display:flex; gap:20px; font-size:0.9rem;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <div style="width:12px; height:12px; background:var(--primary); border-radius:50%"></div> <strong>Social (Alarm)</strong>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <div style="width:12px; height:12px; background:var(--accent); border-radius:50%"></div> <strong>Body (Natural)</strong>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); font-style: italic;">Note: This clock visualizes the conflict on <strong>School Days</strong>.</div>
+            </div>
+
+            <div class="bio-takeaway-box">
+                <h3 style="margin-top:0; color:var(--danger)">What does the Red Zone mean?</h3>
+                <p>The Red Zone represents the gap between <strong>Biology and Society</strong>.</p>
+                <ul style="text-align:left; color:var(--text-muted); margin-bottom:0">
+                    <li><strong>Blue Hand:</strong> When your body naturally wants to wake up.</li>
+                    <li><strong>Light Blue Hand:</strong> When school forces you to wake up.</li>
+                    <li><strong>The Takeaway:</strong> The wider the Red Zone, the more sleep deprived you are during the week, forcing you to "crash" on weekends.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: FIX YOUR WEEK -->
+    <div id="tab3" class="tab-content">
+        <div class="content">
+            <div class="fix-layout">
+                <!-- LEFT COLUMN: INTERVENTIONS -->
+                <div>
+                    <h3>Suggested Interventions</h3>
+                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px;">Toggle these to see how they fix the mismatch.</p>
+
+                    <!-- Weekend Anchor -->
+                    <div class="intervention-item" id="box-anchor">
+                        <div class="int-header">
+                            <div class="int-title"><input type="checkbox" id="checkAnchor" onchange="updateFix()"> ⚓ Weekend Wake Anchor</div>
+                            <span id="valAnchor" style="color:var(--success)">Medium</span>
+                        </div>
+                        <div class="int-desc">Set a limit on how late you sleep in. Higher consistency = Less jetlag.</div>
+                        <div class="slider-row" style="margin:0">
+                            <span style="font-size:0.8rem; min-width:30px">Consistency Level:</span>
+                            <!-- Fixed: Range 1 to 3 with step 1 -->
+                            <input type="range" id="slideAnchor" min="1" max="3" step="1" value="2" oninput="updateFix()">
+                        </div>
+                    </div>
+
+                    <!-- Screen Curfew -->
+                    <div class="intervention-item" id="box-screen">
+                        <div class="int-header">
+                            <div class="int-title"><input type="checkbox" id="checkScreen" onchange="updateFix()"> 📱 Screen Curfew</div>
+                            <span id="valScreen" style="color:var(--success)">45m</span>
+                        </div>
+                        <div class="int-desc">Less blue light at night shifts your body clock earlier, making it easier to sleep at a normal time.</div>
+                        <div class="slider-row" style="margin:0">
+                            <span style="font-size:0.8rem; min-width:30px">Before Bed:</span>
+                            <input type="range" id="slideScreen" min="15" max="90" step="15" value="45" oninput="updateFix()">
+                        </div>
+                    </div>
+
+                    <!-- Morning Light -->
+                    <div class="intervention-item" id="box-light">
+                        <div class="int-header">
+                            <div class="int-title"><input type="checkbox" id="checkLight" onchange="updateFix()"> ☀️ Morning Light</div>
+                        </div>
+                        <div class="int-desc">15 mins outside immediately upon waking. This resets your circadian rhythm so you get sleepy earlier.</div>
+                    </div>
+
+                    <!-- Caffeine -->
+                    <div class="intervention-item" id="box-caff">
+                        <div class="int-header">
+                            <div class="int-title"><input type="checkbox" id="checkCaff" onchange="updateFix()"> ☕ Early Caffeine Cutoff</div>
+                        </div>
+                        <div class="int-desc">Ensures caffeine doesn't push your sleep pressure back.</div>
+                    </div>
+
+                    <!-- Nap -->
+                    <div class="intervention-item" id="box-nap">
+                        <div class="int-header">
+                            <div class="int-title"><input type="checkbox" id="checkNap" onchange="updateFix()"> 🛑 Limit Naps</div>
+                        </div>
+                        <div class="int-desc">Prevents "stealing" sleep from the night, keeping your schedule tight.</div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: VISUALS -->
+                <div>
+                    <h3>Before & After</h3>
+                    
+                    <div class="mini-title">Current Timeline (Tab 1)</div>
+                    <div class="mini-timeline-container" id="vizBefore"></div>
+                    
+                    <div class="mini-title" style="margin-top:15px; color:var(--success)">Projected Timeline</div>
+                    <div class="mini-timeline-container" id="vizAfter" style="border: 1px solid var(--success)"></div>
+
+                    <div class="live-results">
+                        <h4 style="margin:0 0 15px 0; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Live Results</h4>
+                        
+                        <div class="comparison-row">
+                            <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                                <span>Baseline Social Jetlag</span>
+                                <span id="lblBase" style="font-weight:bold">--</span>
+                            </div>
+                            <div class="bar-bg"><div class="bar-marker" id="markBase"></div></div>
+                            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:3px;" id="descBase"></div>
+                        </div>
+
+                        <div class="comparison-row">
+                            <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                                <span>After Interventions</span>
+                                <span id="lblAfter" style="font-weight:bold; color:var(--success)">--</span>
+                            </div>
+                            <div class="bar-bg"><div class="bar-marker" id="markAfter"></div></div>
+                        </div>
+
+                        <div style="font-size:0.85rem; background: rgba(255,255,255,0.05); padding:10px; border-radius:5px;">
+                            <strong>💡 Why this works:</strong> These interventions shift your "Body Clock" earlier. This makes it easier to fall asleep at a reasonable time on weekends, reducing the gap.
+                        </div>
+
+                        <button class="btn-main" onclick="showSummary()" style="width:100%">Export Results</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SUMMARY POPUP -->
+<div id="summaryModal" class="summary-overlay">
+    <div class="summary-card">
+        <h2 style="color:var(--primary)">Sync-Up Results</h2>
+        <p><strong>Baseline Social Jetlag:</strong> <span id="sum-base"></span></p>
+        <p><strong>Risk Level:</strong> <span id="sum-risk"></span></p>
+        <hr style="border:0.5px solid #334155; margin: 15px 0;">
+        <p><strong>Interventions Used:</strong></p>
+        <ul id="sum-list" style="text-align:left; color:var(--text-muted)"></ul>
+        <h3 style="color:var(--success)">Final Jetlag Score: <span id="sum-final"></span></h3>
+        <p id="sum-msg"></p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+            <button class="btn-main" style="background:#ef4444; color:white" onclick="closeSummary()">Close</button>
+            <button class="btn-main" style="background:#fff; color:#000" onclick="window.print()">Print / Save PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    let state = {
+        schoolBed: 23, schoolWake: 6.5,
+        freeBed: 26, freeWake: 11,
+        chronotype: 0
+    };
+
+    // --- HELPER FUNCTIONS ---
+    function formatTime(decimalTime) {
+        let normalized = decimalTime % 24;
+        let hrs = Math.floor(normalized);
+        let mins = Math.round((normalized - hrs) * 60);
+        let ampm = hrs >= 12 ? 'PM' : 'AM';
+        hrs = hrs % 12; hrs = hrs ? hrs : 12;
+        let minStr = mins < 10 ? '0' + mins : mins;
+        return `${hrs}:${minStr} ${ampm}`;
+    }
+
+    function switchTab(tabNum) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.querySelectorAll('.tab-btn')[tabNum-1].classList.add('active');
+        document.getElementById(`tab${tabNum}`).classList.add('active');
+        if(tabNum === 2) updateClock();
+        if(tabNum === 3) updateFix(); // Ensure tab 3 is fresh
+    }
+
+    function calculateSJL(sBed, sWake, fBed, fWake) {
+        let sDuration = (sWake + 24) - sBed;
+        let fDuration = (fWake + 24) - fBed;
+        let sMid = sBed + (sDuration / 2);
+        let fMid = fBed + (fDuration / 2);
+        let diff = Math.abs(fMid - sMid);
+        return { diff, sMid, fMid };
+    }
+
+    // --- TAB 1 LOGIC ---
+    function updateSim() {
+        // Read Inputs
+        state.schoolBed = parseFloat(document.getElementById('schoolBed').value);
+        state.schoolWake = parseFloat(document.getElementById('schoolWake').value);
+        state.freeBed = parseFloat(document.getElementById('freeBed').value);
+        state.freeWake = parseFloat(document.getElementById('freeWake').value);
+
+        // Update Labels
+        document.getElementById('schoolBedVal').innerText = formatTime(state.schoolBed);
+        document.getElementById('schoolWakeVal').innerText = formatTime(state.schoolWake);
+        document.getElementById('freeBedVal').innerText = formatTime(state.freeBed);
+        document.getElementById('freeWakeVal').innerText = formatTime(state.freeWake);
+
+        const res = calculateSJL(state.schoolBed, state.schoolWake, state.freeBed, state.freeWake);
+        
+        // Draw Main Timeline
+        drawTimeline('timelineContainer', state.schoolBed, state.schoolWake, state.freeBed, state.freeWake, true);
+        
+        // Update Meter
+        const display = document.getElementById('sjlDisplay');
+        const needle = document.getElementById('meterNeedle');
+        const badge = document.getElementById('riskBadge');
+        const text = document.getElementById('riskText');
+
+        display.innerText = res.diff.toFixed(2) + " hr";
+        let percent = (res.diff / 4) * 100;
+        if(percent > 100) percent = 100;
+        needle.style.left = percent + "%";
+
+        if(res.diff < 1) {
+            badge.innerText = "LOW RISK"; badge.style.background = "var(--success)"; badge.style.color="#fff";
+            text.innerHTML = "Your sleep timing is consistent.<br>✅ Lower risk of metabolic issues.<br>✅ Better academic focus.";
+        } else if (res.diff < 2) {
+            badge.innerText = "MEDIUM RISK"; badge.style.background = "var(--warning)"; badge.style.color="#000";
+            text.innerHTML = "You have about one time zone of jetlag per week.<br>⚠️ May experience Monday grogginess.<br>⚠️ Slight risk of mood fluctuation.";
+        } else {
+            badge.innerText = "HIGH RISK"; badge.style.background = "var(--danger)"; badge.style.color="#fff";
+            text.innerHTML = "Significant mismatch (Social Jetlag).<br>❌ Associated with higher BMI & metabolic risk.<br>❌ Increased risk of depression & poor focus.";
+        }
+        
+        updateFix(); // update fix calculations in background
+    }
+
+    function drawTimeline(containerId, sBed, sWake, fBed, fWake, showDays) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        const days = showDays ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Weekday', 'Weekend'];
+        
+        days.forEach((day, index) => {
+            let isFree = false;
+            if(showDays) { isFree = (day === 'Sat' || day === 'Sun'); }
+            else { isFree = (index === 1); }
+
+            const bed = isFree ? fBed : sBed;
+            const wake = isFree ? fWake : sWake;
+            
+            // Axis: 6PM (18) to 12PM Next Day (12). Window = 18 hours.
+            const startOffset = (bed - 18) * 5.55; 
+            const duration = ((24 - bed) + wake) * 5.55;
+            const midPointLeft = startOffset + (duration / 2);
+
+            const row = document.createElement('div');
+            row.className = 'day-row';
+            row.style.height = showDays ? '30px' : '20px';
+            
+            let html = `<div class="sleep-bar" style="left:${startOffset}%; width:${duration}%; background-color: ${isFree ? 'var(--accent)' : 'var(--primary)'}"></div>`;
+            html += `<div class="mid-sleep-marker" style="left:${midPointLeft}%"></div>`;
+            if(showDays) html += `<div class="day-label">${day}</div>`;
+            
+            row.innerHTML = html;
+            container.appendChild(row);
+        });
+
+        // Add Ticks if mini view (Fix Your Week tab)
+        if(!showDays) {
+            const ticks = document.createElement('div');
+            ticks.className = 'time-ticks';
+            ticks.innerHTML = `
+                <span style="left:0%">6 PM</span>
+                <span style="left:33%">12 AM</span>
+                <span style="left:66%">6 AM</span>
+                <span style="left:95%">12 PM</span>
+            `;
+            container.appendChild(ticks);
+        }
+    }
+
+    // --- TAB 2 LOGIC (FIXED NEUTRAL RED ZONE) ---
+    function updateClock() {
+        state.chronotype = parseFloat(document.getElementById('chronotype').value);
+        
+        // Text Logic
+        const textField = document.getElementById('chronoText');
+        if(state.chronotype < -0.5) {
+            textField.innerHTML = "<strong>Early Bird:</strong> Your body wakes up early naturally.<br><span class='con-text'>Cons: You struggle to stay awake for late social events/studying and might wake up too early on weekends.</span>";
+        } else if (state.chronotype > 0.5) {
+            textField.innerHTML = "<strong>Night Owl:</strong> Your body clock wants to sleep late.<br><span class='con-text'>Cons: You are fighting biology every school morning. The 'Red Zone' is huge, leading to chronic sleep debt and 'social jetlag'.</span>";
+        } else {
+            textField.innerHTML = "<strong>Neutral:</strong> Your body clock aligns relatively well with society.<br><span class='con-text'>Cons: You are still susceptible to jetlag if you stay up too late on weekends.</span>";
+        }
+
+        // Canvas Logic
+        const canvas = document.getElementById('bioClock');
+        const ctx = canvas.getContext('2d');
+        const cx = 150, cy = 150, radius = 120;
+        ctx.clearRect(0,0,300,300);
+
+        let socialWake = state.schoolWake; 
+        
+        // FIX: Body Wake is now Social Wake + Chronotype deviation (ignoring weekend sleep for this biology viz)
+        // If chronotype is 0 (neutral), Body Wake = Social Wake (Red Zone = 0).
+        // If Night Owl (+2), Body Wake = Social Wake + 2.
+        let biologicalWake = state.schoolWake + state.chronotype; 
+        
+        // Circle
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2);
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 10; ctx.stroke();
+
+        // Numbers
+        for(let i=0; i<24; i+=3) {
+            let angle = (i/24) * Math.PI*2 - Math.PI/2;
+            let x = cx + Math.cos(angle)*(radius-20);
+            let y = cy + Math.sin(angle)*(radius-20);
+            ctx.fillStyle = 'white'; ctx.font = "12px Arial"; ctx.fillText(i, x-5, y+5);
+        }
+
+        // Wedge
+        let socialAngle = (socialWake/24) * Math.PI*2 - Math.PI/2;
+        let bioAngle = (biologicalWake/24) * Math.PI*2 - Math.PI/2;
+        
+        // Draw Wedge only if there is a gap
+        if(Math.abs(socialWake - biologicalWake) > 0.1) {
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            // Ensure we draw the shortest path or specifically the "Delay" path
+            ctx.arc(cx, cy, radius-10, socialAngle, bioAngle, false); 
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; ctx.fill();
+        }
+
+        // Hands
+        drawHand(ctx, cx, cy, socialAngle, radius, 'var(--primary)');
+        drawHand(ctx, cx, cy, bioAngle, radius, 'var(--accent)');
+    }
+
+    function drawHand(ctx, cx, cy, angle, r, color) {
+        let x = cx + Math.cos(angle) * r;
+        let y = cy + Math.sin(angle) * r;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue(color.replace('var(','').replace(')','')) || '#fff'; 
+        ctx.lineWidth = 4; ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+    }
+
+    // --- TAB 3 LOGIC (FIXED ANCHOR TEXT) ---
+    function updateFix() {
+        const useAnchor = document.getElementById('checkAnchor').checked;
+        const anchorSlider = parseFloat(document.getElementById('slideAnchor').value); 
+        const useScreen = document.getElementById('checkScreen').checked;
+        const screenVal = parseFloat(document.getElementById('slideScreen').value);
+        const useLight = document.getElementById('checkLight').checked;
+        const useCaff = document.getElementById('checkCaff').checked;
+        const useNap = document.getElementById('checkNap').checked;
+
+        // UI Updates for Anchor Slider Label
+        // Logic: 1 = Loose, 2 = Medium, 3 = Strict
+        let anchorText = "";
+        if(anchorSlider === 1) anchorText = "Low (Loose)";
+        else if (anchorSlider === 2) anchorText = "Medium";
+        else anchorText = "High (Strict)";
+        document.getElementById('valAnchor').innerText = anchorText;
+
+        document.getElementById('valScreen').innerText = screenVal + "m";
+        toggleBox('box-anchor', useAnchor); toggleBox('box-screen', useScreen);
+        toggleBox('box-light', useLight); toggleBox('box-caff', useCaff); toggleBox('box-nap', useNap);
+
+        // 1. Calculate BASELINE
+        const baseRes = calculateSJL(state.schoolBed, state.schoolWake, state.freeBed, state.freeWake);
+
+        // 2. PROJECTED Logic
+        let pFBed = state.freeBed;
+        let pFWake = state.freeWake;
+        const isLate = baseRes.fMid > baseRes.sMid;
+
+        if (isLate) {
+            if(useScreen) {
+                const shift = (screenVal / 60) * 0.7; 
+                pFBed -= shift; 
+            }
+            if(useLight) {
+                pFBed -= 0.5; pFWake -= 0.5; 
+            }
+            if(useCaff && pFBed > 24) { pFBed -= 0.25; } 
+            if(useNap && pFBed > 24) { pFBed -= 0.25; }
+        }
+
+        // Anchor Logic 
+        // Slider 1 (Low) = Allow +3h. Slider 2 = +2h. Slider 3 (High) = Allow +1h.
+        if(useAnchor) {
+            const allowedDelay = 4 - anchorSlider; 
+            const limit = state.schoolWake + allowedDelay;
+            
+            if(pFWake > limit) {
+                const diff = pFWake - limit;
+                pFWake = limit; 
+                pFBed = pFBed - diff; 
+            }
+        }
+
+        const projRes = calculateSJL(state.schoolBed, state.schoolWake, pFBed, pFWake);
+
+        // Safety check
+        let finalDiff = projRes.diff;
+        if (finalDiff > baseRes.diff) {
+            finalDiff = baseRes.diff;
+            pFBed = state.freeBed; pFWake = state.freeWake;
+        }
+
+        // 4. Update Visuals
+        drawTimeline('vizBefore', state.schoolBed, state.schoolWake, state.freeBed, state.freeWake, false);
+        drawTimeline('vizAfter', state.schoolBed, state.schoolWake, pFBed, pFWake, false);
+
+        document.getElementById('lblBase').innerText = baseRes.diff.toFixed(2) + " hrs";
+        document.getElementById('lblAfter').innerText = finalDiff.toFixed(2) + " hrs";
+
+        let basePct = (baseRes.diff / 4) * 100; if(basePct>100) basePct=100;
+        let projPct = (finalDiff / 4) * 100; if(projPct>100) projPct=100;
+
+        document.getElementById('markBase').style.left = basePct + "%";
+        document.getElementById('markAfter').style.left = projPct + "%";
+        
+        const desc = document.getElementById('descBase');
+        if(baseRes.diff < 1) desc.innerText = "Low risk baseline.";
+        else if (baseRes.diff < 2) desc.innerText = "Moderate mismatch. Likely Monday grogginess.";
+        else desc.innerText = "High risk. Significant Monday jetlag likely.";
+
+        return { base: baseRes, finalDiff: finalDiff, anchorTxt: anchorText };
+    }
+
+    function toggleBox(id, isActive) {
+        const el = document.getElementById(id);
+        if(isActive) el.classList.add('active');
+        else el.classList.remove('active');
+    }
+
+    // --- SUMMARY POPUP ---
+    function showSummary() {
+        const data = updateFix();
+        const baseDiff = data.base.diff;
+        const finalDiff = data.finalDiff;
+
+        document.getElementById('sum-base').innerText = baseDiff.toFixed(2) + " hours";
+        document.getElementById('sum-risk').innerText = baseDiff < 1 ? "Low" : (baseDiff < 2 ? "Medium" : "High");
+        document.getElementById('sum-final').innerText = finalDiff.toFixed(2) + " hours";
+        
+        const list = document.getElementById('sum-list');
+        list.innerHTML = "";
+        
+        if(document.getElementById('checkAnchor').checked) list.innerHTML += `<li>Weekend Anchor (${data.anchorTxt})</li>`;
+        if(document.getElementById('checkScreen').checked) list.innerHTML += `<li>Screen Curfew (${document.getElementById('slideScreen').value}m)</li>`;
+        if(document.getElementById('checkLight').checked) list.innerHTML += `<li>Morning Light Therapy</li>`;
+        if(document.getElementById('checkCaff').checked) list.innerHTML += `<li>Early Caffeine Cutoff</li>`;
+        if(document.getElementById('checkNap').checked) list.innerHTML += `<li>Nap Limits</li>`;
+
+        if(list.innerHTML === "") list.innerHTML = "<li>No interventions selected.</li>";
+        
+        let msg = "";
+        if(finalDiff < baseDiff) {
+            msg = `Great job! You reduced your Social Jetlag by ${(baseDiff - finalDiff).toFixed(2)} hours.`;
+            document.getElementById('sum-msg').style.color = "var(--success)";
+        } else {
+            msg = "Try applying more strategies to reduce the gap!";
+            document.getElementById('sum-msg').style.color = "var(--warning)";
+        }
+        document.getElementById('sum-msg').innerText = msg;
+        document.getElementById('summaryModal').classList.add('show');
+    }
+
+    function closeSummary() {
+        document.getElementById('summaryModal').classList.remove('show');
+    }
+
+    // Initialize
+    updateSim();
+    updateClock();
+</script>
+
+</body>
+</html>
