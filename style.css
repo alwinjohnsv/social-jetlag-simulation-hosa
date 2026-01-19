@@ -313,3 +313,14 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.body-base {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
