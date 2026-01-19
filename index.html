@@ -190,47 +190,58 @@
     </section>
 
     <!-- TAB 3: Biological Impact Explorer -->
-    <section id="tab3" class="tab-content">
-      <h1>Biological Impact Explorer</h1>
-      <p>
-        Hover or click on the diagram to see how social jetlag and sleep debt affect different systems
-        in your body over time.
+ <!-- TAB 3: Biological Impact Explorer -->
+<section id="tab3" class="tab-content">
+  <h1>Biological Impact Explorer</h1>
+  <p>
+    Hover or click on the diagram to see how social jetlag and sleep debt affect different systems
+    in your body over time.
+  </p>
+
+  <div class="bio-grid">
+    <div class="body-diagram">
+
+      <!-- NEW: Human silhouette -->
+      <img 
+        src="https://upload.wikimedia.org/wikipedia/commons/4/4f/Human_body_silhouette.svg"
+        alt="Human silhouette"
+        class="body-base"
+      />
+
+      <!-- Clickable regions -->
+      <div class="body-part" data-part="brain" style="top: 10%; left: 45%;">Brain</div>
+      <div class="body-part" data-part="mood" style="top: 25%; left: 60%;">Mood</div>
+      <div class="body-part" data-part="heart" style="top: 35%; left: 47%;">Heart</div>
+      <div class="body-part" data-part="metabolism" style="top: 50%; left: 40%;">Metabolism</div>
+      <div class="body-part" data-part="immune" style="top: 60%; left: 55%;">Immune</div>
+
+    </div>
+
+    <div class="bio-info">
+      <h2 id="bio-title">Select a system</h2>
+      <p id="bio-text">
+        Click on a labeled region in the diagram to learn how social jetlag and sleep debt can
+        influence that system.
       </p>
 
-      <div class="bio-grid">
-        <div class="body-diagram">
-          <!-- Simple stylized body with clickable regions -->
-          <div class="body-part" data-part="brain" style="top: 10%; left: 45%;">Brain</div>
-          <div class="body-part" data-part="heart" style="top: 35%; left: 47%;">Heart</div>
-          <div class="body-part" data-part="metabolism" style="top: 50%; left: 40%;">Metabolism</div>
-          <div class="body-part" data-part="immune" style="top: 60%; left: 55%;">Immune</div>
-          <div class="body-part" data-part="mood" style="top: 25%; left: 60%;">Mood</div>
+      <div class="sleep-debt-panel">
+        <h3>Sleep Debt Accumulation</h3>
+        <p>
+          Use the slider to see how missing a bit of sleep each night adds up over a week.
+        </p>
+        <div class="form-group">
+          <label>Hours of sleep lost per weekday</label>
+          <input type="range" id="debt-loss" min="0" max="3" value="1" step="0.5" />
         </div>
-
-        <div class="bio-info">
-          <h2 id="bio-title">Select a system</h2>
-          <p id="bio-text">
-            Click on a labeled region in the diagram to learn how social jetlag and sleep debt can
-            influence that system.
-          </p>
-
-          <div class="sleep-debt-panel">
-            <h3>Sleep Debt Accumulation</h3>
-            <p>
-              Use the slider to see how missing a bit of sleep each night adds up over a week.
-            </p>
-            <div class="form-group">
-              <label>Hours of sleep lost per weekday</label>
-              <input type="range" id="debt-loss" min="0" max="3" value="1" step="0.5" />
-            </div>
-            <p>
-              Weekly sleep debt: <strong><span id="debt-hours">5</span> hours</strong>
-            </p>
-            <p id="debt-message"></p>
-          </div>
-        </div>
+        <p>
+          Weekly sleep debt: <strong><span id="debt-hours">5</span> hours</strong>
+        </p>
+        <p id="debt-message"></p>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
   </main>
 
   <footer>
