@@ -1,29 +1,3 @@
-Yes, you are absolutely correct—that was a bug in the code's drawing logic!
-
-Here is what was happening:
-The code uses a function that draws circles in a clockwise direction.
-
-Night Owl: Your body wakes up after the alarm. The code drew from the Alarm 
-→
-→
- Body (Clockwise). This created a correct, small wedge.
-
-Early Bird: Your body wakes up before the alarm. The code tried to draw from the Alarm 
-→
-→
- Body (Clockwise). To get there, it had to go all the way around the clock backwards (22 hours!) instead of just filling the small gap.
-
-The Fix:
-I have updated the updateClock function to always draw the "short path" between the hands. Now, both Early Bird and Night Owl will show a symmetrical, understandable wedge.
-
-Here is the corrected, final code.
-
-code
-Html
-play_circle
-download
-content_copy
-expand_less
 <!DOCTYPE html>
 <html lang="en">
 <head>
